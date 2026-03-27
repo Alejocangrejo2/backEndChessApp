@@ -3,6 +3,7 @@ package com.chess.config;
 import com.chess.security.JwtAuthenticationFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -14,12 +15,13 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 /**
  * Configuración de Spring Security.
- * 
- * - Deshabilita CSRF (no necesario para APIs REST stateless)
- * - Configura sesión como STATELESS (JWT es stateless)
- * - Permite acceso público a /api/auth/** (login/register)
- * - Protege /api/game/** con autenticación JWT
- * - Agrega el filtro JWT antes del filtro de Spring
+ *
+ * - Deshabilita CSRF (API REST stateless)
+ * - CORS habilitado (usa CorsConfigurationSource bean)
+ * - Sesión STATELESS (JWT)
+ * - OPTIONS permitido globalmente (preflight CORS)
+ * - /api/auth/** público
+ * - /api/game/** protegido con JWT
  */
 @Configuration
 @EnableWebSecurity
@@ -37,7 +39,7 @@ public class SecurityConfig {
             // Deshabilitar CSRF (API REST stateless)
             .csrf(csrf -> csrf.disable())
 
-            // Configurar CORS
+            // Habilitar CORS (usa el bean CorsConfigurationSource)
             .cors(Customizer.withDefaults())
 
             // Sesión stateless (JWT)
@@ -46,14 +48,18 @@ public class SecurityConfig {
             )
 
             // Reglas de autorización
-.authorizeHttpRequests(auth -> auth
-    .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
-    .requestMatchers("/api/auth/**").permitAll()
-    .requestMatchers("/api/game/**").authenticated()
-    .anyRequest().permitAll()
-)
+            .authorizeHttpRequests(auth -> auth
+                // IMPORTANTE: Permitir ALL preflight OPTIONS requests
+                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                // Endpoints públicos (login, register)
+                .requestMatchers("/api/auth/**").permitAll()
+                // Endpoints protegidos (requieren JWT)
+                .requestMatchers("/api/game/**").authenticated()
+                // Cualquier otro request es permitido
+                .anyRequest().permitAll()
+            )
 
-            // Agregar filtro JWT
+            // Agregar filtro JWT antes del filtro de autenticación de Spring
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
@@ -61,7 +67,6 @@ public class SecurityConfig {
 
     /**
      * BCrypt para hashear contraseñas.
-     * Nunca almacenar contraseñas en texto plano.
      */
     @Bean
     public PasswordEncoder passwordEncoder() {
