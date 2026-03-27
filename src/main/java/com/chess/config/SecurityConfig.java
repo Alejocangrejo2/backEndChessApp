@@ -46,14 +46,12 @@ public class SecurityConfig {
             )
 
             // Reglas de autorización
-            .authorizeHttpRequests(auth -> auth
-                // Endpoints públicos (login, register)
-                .requestMatchers("/api/auth/**").permitAll()
-                // Todos los demás endpoints requieren autenticación
-                .requestMatchers("/api/game/**").authenticated()
-                // Cualquier otro request es permitido (e.g., health check)
-                .anyRequest().permitAll()
-            )
+.authorizeHttpRequests(auth -> auth
+    .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
+    .requestMatchers("/api/auth/**").permitAll()
+    .requestMatchers("/api/game/**").authenticated()
+    .anyRequest().permitAll()
+)
 
             // Agregar filtro JWT
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
