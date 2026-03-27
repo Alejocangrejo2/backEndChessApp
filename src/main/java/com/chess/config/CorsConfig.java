@@ -42,7 +42,7 @@ public class CorsConfig {
         );
 
         // Permitir envío de cookies/credenciales
-        configuration.setAllowCredentials(true);
+        configuration.setAllowCredentials(false);
 
         // Tiempo de caché para preflight requests (1 hora)
         configuration.setMaxAge(3600L);
